@@ -1,0 +1,11 @@
+controller:
+  storageCapacityTracking:
+    enabled: false
+
+scheduler:
+  enabled: true
+  type: daemonset
+
+webhook:
+  podMutatingWebhook:
+    enabled: true

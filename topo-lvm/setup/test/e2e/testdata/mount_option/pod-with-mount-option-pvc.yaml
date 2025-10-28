@@ -1,0 +1,29 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: topo-pvc-mount-option
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: topolvm-provisioner-mount-option
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pause-mount-option
+  labels:
+    app.kubernetes.io/name: pause
+spec:
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause
+      volumeMounts:
+        - mountPath: /test1
+          name: my-volume
+  volumes:
+    - name: my-volume
+      persistentVolumeClaim:
+        claimName: topo-pvc-mount-option

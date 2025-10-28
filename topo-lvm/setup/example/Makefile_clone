@@ -1,0 +1,33 @@
+# Setup
+BINDIR:=/usr/local/bin
+sudo apt-get update
+sudo apt-get install -y lvm2 xfsprogs thin-provisioning-tools
+kind --version
+mkdir -p build
+helm --version
+
+# Make create lvmd
+
+mkdir -p /tmp/topolvm/lvmd
+sed -e 's=/run/topolvm/lvmd.sock=/tmp/topolvm/lvmd/lvmd.sock=; s=spare-gb: 10=spare-gb: 1=' ../deploy/lvmd-config/lvmd.yaml > /tmp/topolvm/lvmd/lvmd.yaml
+go build -o build/lvmd ../cmd/lvmd
+if [ -f ./build/backing_store ]; then make stop-lvmd; fi; \
+mkdir -p /tmp/topolvm/worker; \
+mkdir -p /tmp/topolvm/lvmd; \
+truncate --size=20G ./build/backing_store; \
+sudo losetup -f ./build/backing_store; \
+sudo vgcreate -f -y myvg1 $(sudo losetup -j ./build/backing_store | cut -d: -f1); \
+sudo lvcreate -T myvg1/thinpool -L 12G; \
+sudo systemd-run --unit=lvmd.service /home/mint-dev/local_storage_OSI/topo-lvm/topolvm/example/build/lvmd --config=/tmp/topolvm/lvmd/lvmd.yaml; \
+
+
+# Make create kind cluster
+
+
+
+
+TMPDIR:=/tmp/topolvm
+mkdir -p /tmp/topolvm/lvmd
+sed -e 's=/run/topolvm/lvmd.sock=/tmp/topolvm/lvmd/lvmd.sock=; s=spare-gb: 10=spare-gb: 1=' $< > $@
+
+helm install --namespace=topolvm-system topolvm ../charts/topolvm/ -f values.yaml

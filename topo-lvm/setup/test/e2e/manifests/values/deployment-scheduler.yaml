@@ -1,0 +1,21 @@
+controller:
+  storageCapacityTracking:
+    enabled: false
+
+scheduler:
+  enabled: true
+  type: deployment
+  deployment:
+    replicaCount: 2
+  service:
+    type: NodePort
+    nodePort: 30251
+  options:
+    listen:
+      host: 0.0.0.0
+  tolerations: null
+  affinity: null
+
+webhook:
+  podMutatingWebhook:
+    enabled: true
