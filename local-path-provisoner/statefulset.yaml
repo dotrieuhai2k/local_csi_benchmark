@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tsdb-local-path
+spec:
+  serviceName: tsdb-local-path
+  replicas: 1
+  selector:
+    matchLabels:
+      app: timescale-local-path-app
+  template:
+    metadata:
+      labels:
+        app: timescale-local-path-app
+    spec:
+      containers:
+        - name: tsdb-local-path
+          image: 'timescale/timescaledb:latest-pg17'
+          env:
+            - name: POSTGRES_USER
+              value: postgres`
+            - name: POSTGRES_PASSWORD
+              value: postgres
+            - name: POSTGRES_DATABASE
+              value: postgres
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: tsdb-local-path
+      volumes:
+        - name: tsdb-local-path
+          persistentVolumeClaim:
+            claimName: timescale-local-path-pvc
+

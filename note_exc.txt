@@ -1,0 +1,66 @@
+# Prerequisites
+timescale image: timescale/timescaledb:2.13.1-pg16
+
+# Export pod timescaledb to host
+kubectl port-forward timescale-0 5432:5432
+
+# Create DB
+psql -l localhost -p 5432 -U posgres
+```sql
+CREATE USER tsdb WITH ENCRYPTED PASSWORD 'tsdb';
+CREATE DATABASE timescaledb OWNER tsdb;
+ALTER USER tsdb WITH SUPERUSERl;
+```
+
+# Setup tsbs
+cd tsbs
+make all
+
+# Prepare data
+bin/tsbs_generate_data \
+  --use-case="devops" \
+  --seed=123 \
+  --scale=100 \
+  --timestamp-start="2025-10-25T00:00:00Z" \
+  --timestamp-end="2025-10-26T00:00:00Z" \
+  --log-interval="10s" \
+  --format="timescaledb" \
+  | gzip > /tmp/devops-data.gz
+
+# Prepare queries
+bin/tsbs_generate_queries \
+  --use-case="devops" \
+  --seed=123 \
+  --scale=100 \
+  --timestamp-start="2025-10-25T00:00:00Z" \
+  --timestamp-end="2025-10-26T00:00:01Z" \
+  --queries=1000 \
+  --query-type="single-groupby-1-1-1" \
+  --format="timescaledb" \
+  | gzip > /tmp/devops-queries-single-groupby-1-1-1.gz
+
+# Benchmark ingest data performance
+gunzip < /tmp/devops-data.gz | \
+  bin/tsbs_load_timescaledb \
+    --host=localhost \
+    --port=5432 \
+    --user=tsdb \
+    --pass=tsdb \
+    --db-name=timescaledb \
+    --workers=8 \
+    --chunk-time=8h \
+    --field-index-count=1 \
+    --do-create-db=true
+
+# Benchmark read performance
+gunzip < /tmp/devops-queries-single-groupby-1-1-1.gz | \
+  bin/tsbs_run_queries_timescaledb \
+    --workers=8 \
+    --hosts=localhost \
+    --port=5432 \
+    --user=tsdb \
+    --pass=tsdb \
+    --db-name=timescaledb
+
+
+
